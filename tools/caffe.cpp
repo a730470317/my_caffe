@@ -14,7 +14,8 @@ namespace bp = boost::python;
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/util/signal_handler.h"
-
+#define ZIV_LOG_WITH_PAUSE   printf("%s--%d",__FILE__,__LINE__);getchar();
+#define ZIV_LOG              printf("%s--%d\r",__FILE__,__LINE__);
 using caffe::Blob;
 using caffe::Caffe;
 using caffe::Net;
@@ -71,18 +72,25 @@ class __Registerer_##func { \
 __Registerer_##func g_registerer_##func; \
 }
 
-static BrewFunction GetBrewFunction(const caffe::string& name) {
-  if (g_brew_map.count(name)) {
-    return g_brew_map[name];
-  } else {
-    LOG(ERROR) << "Available caffe actions:";
-    for (BrewMap::iterator it = g_brew_map.begin();
-         it != g_brew_map.end(); ++it) {
-      LOG(ERROR) << "\t" << it->first;
+static BrewFunction GetBrewFunction(const caffe::string& name) 
+{
+    cout << "GetBrewFunction: " << name <<endl;
+    ZIV_LOG_WITH_PAUSE;
+    if (g_brew_map.count(name)) 
+    {
+        ZIV_LOG_WITH_PAUSE;
+        return g_brew_map[name];
+    } else 
+    {
+        LOG(ERROR) << "Available caffe actions:";
+        for (BrewMap::iterator it = g_brew_map.begin();
+             it != g_brew_map.end(); ++it) 
+             {
+                 LOG(ERROR) << "\t" << it->first;
+             }
+                 LOG(FATAL) << "Unknown action: " << name;
+                 return NULL;  // not reachable, just to suppress old compiler warnings.
     }
-    LOG(FATAL) << "Unknown action: " << name;
-    return NULL;  // not reachable, just to suppress old compiler warnings.
-  }
 }
 
 // Parse GPU ids or use all available devices
@@ -263,12 +271,12 @@ int train() {
 RegisterBrewFunction(train);
 
 
-// Test: score a model.
-int test() {
-  CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to score.";
-  CHECK_GT(FLAGS_weights.size(), 0) << "Need model weights to score.";
-  vector<string> stages = get_stages_from_flags();
-
+               // Test: score a model.
+               int test() {
+                   CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to score.";
+                   CHECK_GT(FLAGS_weights.size(), 0) << "Need model weights to score.";
+                   vector<string> stages = get_stages_from_flags();
+                   
   // Set device id and mode
   vector<int> gpus;
   get_gpus(&gpus);
@@ -289,7 +297,7 @@ int test() {
   Net<float> caffe_net(FLAGS_model, caffe::TEST, FLAGS_level, &stages);
   caffe_net.CopyTrainedLayersFrom(FLAGS_weights);
   LOG(INFO) << "Running for " << FLAGS_iterations << " iterations.";
-
+                       
   vector<int> test_score_output_id;
   vector<float> test_score;
   float loss = 0;
@@ -331,9 +339,9 @@ int test() {
     LOG(INFO) << output_name << " = " << mean_score << loss_msg_stream.str();
   }
 
-  return 0;
-}
-RegisterBrewFunction(test);
+                           return 0;
+               }
+               RegisterBrewFunction(test);
 
 
 // Time: benchmark the execution time of a model.
@@ -342,31 +350,31 @@ int time() {
   caffe::Phase phase = get_phase_from_flags(caffe::TRAIN);
   vector<string> stages = get_stages_from_flags();
 
-  // Set device id and mode
-  vector<int> gpus;
-  get_gpus(&gpus);
-  if (gpus.size() != 0) {
-    LOG(INFO) << "Use GPU with device ID " << gpus[0];
-    Caffe::SetDevice(gpus[0]);
-    Caffe::set_mode(Caffe::GPU);
-  } else {
-    LOG(INFO) << "Use CPU.";
-    Caffe::set_mode(Caffe::CPU);
-  }
-  // Instantiate the caffe net.
-  Net<float> caffe_net(FLAGS_model, phase, FLAGS_level, &stages);
-
-  // Do a clean forward and backward pass, so that memory allocation are done
-  // and future iterations will be more stable.
-  LOG(INFO) << "Performing Forward";
-  // Note that for the speed benchmark, we will assume that the network does
-  // not take any input blobs.
-  float initial_loss;
-  caffe_net.Forward(&initial_loss);
-  LOG(INFO) << "Initial loss: " << initial_loss;
-  LOG(INFO) << "Performing Backward";
-  caffe_net.Backward();
-
+                   // Set device id and mode
+                   vector<int> gpus;
+                   get_gpus(&gpus);
+                   if (gpus.size() != 0) {
+                       LOG(INFO) << "Use GPU with device ID " << gpus[0];
+                       Caffe::SetDevice(gpus[0]);
+                       Caffe::set_mode(Caffe::GPU);
+                   } else {
+                       LOG(INFO) << "Use CPU.";
+                       Caffe::set_mode(Caffe::CPU);
+                   }
+                     // Instantiate the caffe net.
+                       Net<float> caffe_net(FLAGS_model, phase, FLAGS_level, &stages);
+                       
+                       // Do a clean forward and backward pass, so that memory allocation are done
+                       // and future iterations will be more stable.
+                       LOG(INFO) << "Performing Forward";
+                       // Note that for the speed benchmark, we will assume that the network does
+                       // not take any input blobs.
+                       float initial_loss;
+                       caffe_net.Forward(&initial_loss);
+                       LOG(INFO) << "Initial loss: " << initial_loss;
+                       LOG(INFO) << "Performing Backward";
+                       caffe_net.Backward();
+                       
   const vector<shared_ptr<Layer<float> > >& layers = caffe_net.layers();
   const vector<vector<Blob<float>*> >& bottom_vecs = caffe_net.bottom_vecs();
   const vector<vector<Blob<float>*> >& top_vecs = caffe_net.top_vecs();
@@ -429,35 +437,39 @@ RegisterBrewFunction(time);
 
 int main(int argc, char** argv) 
 {
-    std::cout << "Run the main function, --ziv.lin" <<std::endl;
     std::cout << "Current complie date is " << __DATE__ <<" --- "<< __TIME__<<endl;
-    getchar();
-  // Print output to stderr (while still logging).
-  FLAGS_alsologtostderr = 1;
-  // Set version
-  gflags::SetVersionString(AS_STRING(CAFFE_VERSION));
-  // Usage message.
-  gflags::SetUsageMessage("command line brew\n"
-      "usage: caffe <command> <args>\n\n"
-      "commands:\n"
-      "  train           train or finetune a model\n"
-      "  test            score a model\n"
-      "  device_query    show GPU diagnostic information\n"
-      "  time            benchmark model execution time");
-  // Run tool or show usage.
-  caffe::GlobalInit(&argc, &argv);
-  if (argc == 2) {
-#ifdef WITH_PYTHON_LAYER
-    try {
-#endif
-      return GetBrewFunction(caffe::string(argv[1]))();
-#ifdef WITH_PYTHON_LAYER
-    } catch (bp::error_already_set) {
-      PyErr_Print();
-      return 1;
+    ZIV_LOG_WITH_PAUSE;
+    // Print output to stderr (while still logging).
+    FLAGS_alsologtostderr = 1;
+    // Set version
+    gflags::SetVersionString(AS_STRING(CAFFE_VERSION));
+    // Usage message.
+    gflags::SetUsageMessage("command line brew\n"
+    "usage: caffe <command> <args>\n\n"
+    "commands:\n"
+    "  train           train or finetune a model\n"
+    "  test            score a model\n"
+    "  device_query    show GPU diagnostic information\n"
+    "  time            benchmark model execution time");
+    // Run tool or show usage.
+    caffe::GlobalInit(&argc, &argv);
+    if (argc == 2) 
+    {
+        #ifdef WITH_PYTHON_LAYER
+        try 
+        {
+            #endif
+            ZIV_LOG_WITH_PAUSE;
+            return GetBrewFunction(caffe::string(argv[1]))();
+            #ifdef WITH_PYTHON_LAYER
+        } catch (bp::error_already_set) 
+        {
+            PyErr_Print();
+            return 1;
+        }
+        #endif
+    } else 
+    {
+        gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/caffe");
     }
-#endif
-  } else {
-    gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/caffe");
-  }
 }
