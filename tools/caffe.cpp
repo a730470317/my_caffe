@@ -25,7 +25,7 @@ using caffe::string;
 using caffe::Timer;
 using caffe::vector;
 using std::ostringstream;
-
+using namespace std;
 DEFINE_string(gpu, "",
     "Optional; run in GPU mode on given device IDs separated by ','."
     "Use '-gpu all' to run on all available GPUs. The effective training "
@@ -244,9 +244,10 @@ int train() {
   } else if (FLAGS_weights.size()) {
     CopyLayers(solver.get(), FLAGS_weights);
   }
-
+ 
   LOG(INFO) << "Starting Optimization";
-  if (gpus.size() > 1) {
+  if (gpus.size() > 1) 
+  {
 #ifdef USE_NCCL
     caffe::NCCL<float> nccl(solver);
     nccl.Run(gpus, FLAGS_snapshot.size() > 0 ? FLAGS_snapshot.c_str() : NULL);
@@ -424,9 +425,13 @@ int time() {
   LOG(INFO) << "*** Benchmark ends ***";
   return 0;
 }
-RegisterBrewFunction(time);
+RegisterBrewFunction(time);     
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
+    std::cout << "Run the main function, --ziv.lin" <<std::endl;
+    std::cout << "Current complie date is " << __DATE__ <<" --- "<< __TIME__<<endl;
+    getchar();
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
   // Set version
